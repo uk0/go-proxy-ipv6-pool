@@ -11,12 +11,17 @@ import (
 var socks5Conf = &socks5.Config{}
 var socks5Server *socks5.Server
 
-func init() {
+func SocketInit(socksUser string, socksPass string) {
 	// 指定出口 IP 地址
 	// 指定本地出口 IPv6 地址
 
+	creds := socks5.StaticCredentials{
+		socksUser: socksPass,
+	}
+	auth := socks5.UserPassAuthenticator{Credentials: creds}
 	// 创建一个 SOCKS5 服务器配置
 	socks5Conf = &socks5.Config{
+		AuthMethods: []socks5.Authenticator{auth},
 		Dial: func(ctx context.Context, network, addr string) (net.Conn, error) {
 
 			outgoingIP, err := generateRandomIPv6(cidr)
@@ -37,7 +42,7 @@ func init() {
 			}
 			// 通过代理服务器建立到目标服务器的连接
 
-			log.Println("[socks5]",addr, "via", outgoingIP)
+			log.Println("[socks5]", addr, "via", outgoingIP)
 			return dialer.DialContext(ctx, network, addr)
 		},
 	}

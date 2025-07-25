@@ -11,12 +11,16 @@ import (
 )
 
 var cidr string
+var user string
+var pass string
 var port int
 
 func main() {
 
 	flag.IntVar(&port, "port", 52122, "server port")
 	flag.StringVar(&cidr, "cidr", "", "ipv6 cidr")
+	flag.StringVar(&user, "user", "admin", "user ")
+	flag.StringVar(&pass, "pass", "admin", "pass")
 	flag.Parse()
 
 	if cidr == "" {
@@ -30,23 +34,26 @@ func main() {
 		log.Fatal("port too large")
 	}
 
+	SocketInit(user, pass)
+
+	HttpInit(user, pass)
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	go func() {
 		err := socks5Server.ListenAndServe("tcp", fmt.Sprintf("0.0.0.0:%d", socks5Port))
 		if err != nil {
-			log.Fatal("socks5 Server err:",err)
+			log.Fatal("socks5 Server err:", err)
 		}
 
 	}()
 	go func() {
 		err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", httpPort), httpProxy)
 		if err != nil {
-			log.Fatal("http Server err",err)
+			log.Fatal("http Server err", err)
 		}
 	}()
-
 
 	log.Println("server running ...")
 	log.Printf("http running on 0.0.0.0:%d", httpPort)

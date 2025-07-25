@@ -1,21 +1,44 @@
 package main
 
 import (
+	"encoding/base64"
+	"github.com/elazarl/goproxy"
 	"io"
 	"log"
 	"net"
 	"net/http"
-
-	"github.com/elazarl/goproxy"
+	"strings"
 )
 
 var httpProxy = goproxy.NewProxyHttpServer()
 
-func init() {
+func basicAuthOK(header string, httpProxyUser string, httpProxyPass string) bool {
+	if !strings.HasPrefix(header, "Basic ") {
+		return false
+	}
+	payload, err := base64.StdEncoding.DecodeString(header[len("Basic "):])
+	if err != nil {
+		return false
+	}
+	parts := strings.SplitN(string(payload), ":", 2)
+	if len(parts) != 2 {
+		return false
+	}
+	return parts[0] == httpProxyUser && parts[1] == httpProxyPass
+}
+
+func HttpInit(httpProxyUser string, httpProxyPass string) {
 	httpProxy.Verbose = true
 
 	httpProxy.OnRequest().DoFunc(
 		func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+
+			auth := req.Header.Get("Proxy-Authorization")
+			if !basicAuthOK(auth, httpProxyUser, httpProxyPass) {
+				log.Printf("Proxy-Authorization error")
+				return req, nil
+			}
+
 			// 为 IPv6 地址添加方括号
 			outgoingIP, err := generateRandomIPv6(cidr)
 			if err != nil {
