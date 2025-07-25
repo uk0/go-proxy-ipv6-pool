@@ -20,6 +20,16 @@ The Go language implementation of [zu1k/http-proxy-ipv6-pool](https://github.com
     curl -x socks5://xxx:52123 http://6.ipw.cn/ # 2001:399:8205:ae00:456a:ab12 (random ipv6 address)
 ```
 
+## Features
+
+```bash
+
+
+nohup ./go-proxy-ipv6-pool --port 51737 --cidr 2001:abc:edf:b::/64 --user admin --pass admin123 > proxy.log 2>&1 &
+
+```
+
+
 ## License
 
 MIT License (see [LICENSE](LICENSE))
