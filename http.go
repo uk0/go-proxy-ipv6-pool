@@ -35,8 +35,13 @@ func HttpInit(httpProxyUser string, httpProxyPass string) {
 
 			auth := req.Header.Get("Proxy-Authorization")
 			if !basicAuthOK(auth, httpProxyUser, httpProxyPass) {
-				log.Printf("Proxy-Authorization error")
-				return nil, nil
+				// 构造 407 响应，要求客户端进行 Basic 验证
+				resp := goproxy.NewResponse(req,
+					goproxy.ContentTypeText, http.StatusProxyAuthRequired,
+					"407 Proxy Authentication Required\n",
+				)
+				resp.Header.Set("Proxy-Authenticate", `Basic realm="MyProxy"`)
+				return req, resp
 			}
 
 			// 为 IPv6 地址添加方括号
@@ -87,6 +92,16 @@ func HttpInit(httpProxyUser string, httpProxyPass string) {
 
 	httpProxy.OnRequest().HijackConnect(
 		func(req *http.Request, client net.Conn, ctx *goproxy.ProxyCtx) {
+
+			auth := req.Header.Get("Proxy-Authorization")
+			if !basicAuthOK(auth, httpProxyUser, httpProxyPass) {
+				// 407 并关闭连接
+				client.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\n" +
+					"Proxy-Authenticate: Basic realm=\"MyProxy\"\r\n\r\n"))
+				client.Close()
+				return
+			}
+
 			// 通过代理服务器建立到目标服务器的连接
 			outgoingIP, err := generateRandomIPv6(cidr)
 			if err != nil {
