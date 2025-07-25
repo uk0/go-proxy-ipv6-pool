@@ -36,7 +36,7 @@ func HttpInit(httpProxyUser string, httpProxyPass string) {
 			auth := req.Header.Get("Proxy-Authorization")
 			if !basicAuthOK(auth, httpProxyUser, httpProxyPass) {
 				log.Printf("Proxy-Authorization error")
-				return req, nil
+				return nil, nil
 			}
 
 			// 为 IPv6 地址添加方括号
